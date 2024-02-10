@@ -13,6 +13,9 @@ class SquareObj():
         self.size = size
         self.vel_x = vel_x
 
+    def get_midpoint(self):
+        return (self.loc_x + 0.5 * self.size, self.loc_y + 0.5 * self.size)
+
 
 class PtzCameraEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
@@ -39,12 +42,6 @@ class PtzCameraEnv(gym.Env):
         # The margin between an object to each side of the lane
         self.obj_margin = obj_margin
 
-        # The grid id for the upper-right corner of the viewport
-        self.viewport_grid_loc = (
-            int((self.num_grid_x - self.num_grid_viewport_x) / 2),
-            int((self.num_grid_y - self.num_grid_viewport_y) / 2),
-        )
-
         self.obj_size = lane_width - obj_margin * 2
 
         self.observation_space = spaces.Box(
@@ -54,9 +51,9 @@ class PtzCameraEnv(gym.Env):
                            self.num_grid_viewport_x * self.grid_size,
                            3]),
             dtype=np.uint8)
-        print('observation_space: ', self.observation_space)
 
         self.objects = []
+        self.vp_2_objcnt = {}
 
         # "no-op", "right", "up", "left", "down"
         self.action_space = spaces.Discrete(5)
@@ -93,20 +90,26 @@ class PtzCameraEnv(gym.Env):
         y = self.viewport_grid_loc[1] * self.grid_size
         frame = frame[y: y + self.num_grid_viewport_y * self.grid_size,
                       x: x + self.num_grid_viewport_x * self.grid_size]
-        print(frame.shape)
         return frame
 
     def _get_info(self):
-        return {}
+        return {
+            'vp_2_objcnt': self.vp_2_objcnt,
+        }
 
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
 
-        # Agent location refers to the grid id of the upper-right corner of the
-        # viewport
-        self._agent_location = (int((self.num_grid_x - self.num_grid_viewport_x) / 2),
-                                int((self.num_grid_y - self.num_grid_viewport_y) / 2))
+        # The grid id for the upper-right corner of the viewport
+        self.viewport_grid_loc = (
+            int((self.num_grid_x - self.num_grid_viewport_x) / 2),
+            int((self.num_grid_y - self.num_grid_viewport_y) / 2),
+        )
+
+        # Quickly get into steady state
+        for _ in range(1000):
+            self._step_objects()
 
         observation = self._get_obs()
         info = self._get_info()
@@ -118,12 +121,12 @@ class PtzCameraEnv(gym.Env):
 
     def step(self, action):
         self._move_viewport(action)
-        self._move_objects()
-        self._gc_objects()
-        self._spawn_objects()
+        self._step_objects()
+
+        self.vp_2_objcnt = self._count_obj_in_all_viewports()
 
         observation = self._get_obs()
-        reward = 0
+        reward = self.vp_2_objcnt[self.viewport_grid_loc]
         terminated = False
         info = self._get_info()
 
@@ -132,6 +135,11 @@ class PtzCameraEnv(gym.Env):
 
         return observation, reward, terminated, False, info
 
+    def _step_objects(self):
+        self._move_objects()
+        self._gc_objects()
+        self._spawn_objects()
+
     def _move_viewport(self, action):
         direction = self._action_to_direction[action]
         self.viewport_grid_loc = np.array(self.viewport_grid_loc) + direction
@@ -139,6 +147,32 @@ class PtzCameraEnv(gym.Env):
             np.clip(self.viewport_grid_loc[0], 0, self.num_grid_x - self.num_grid_viewport_x),
             np.clip(self.viewport_grid_loc[1], 0, self.num_grid_y - self.num_grid_viewport_y),
         )
+
+    def _count_obj_in_all_viewports(self):
+        ret = {}
+        for vp in self._get_all_viewports():
+            ret[vp] = self._count_obj_in_viewport(vp)
+        return ret
+
+    def _get_all_viewports(self):
+        for x in range(self.num_grid_x - self.num_grid_viewport_x + 1):
+            for y in range(self.num_grid_y - self.num_grid_viewport_y + 1):
+                yield (x, y)
+
+    def _count_obj_in_viewport(self, viewport_grid_loc):
+        x1 = viewport_grid_loc[0] * self.grid_size
+        x2 = (viewport_grid_loc[0] + self.num_grid_viewport_x) * self.grid_size
+        y1 = viewport_grid_loc[1] * self.grid_size
+        y2 = (viewport_grid_loc[1] + self.num_grid_viewport_y) * self.grid_size
+
+        cnt = len([o for o in self.objects
+                   if self._is_inside(o, x1, x2, y1, y2)])
+        return cnt
+
+    @staticmethod
+    def _is_inside(o, x1, x2, y1, y2):
+        x, y = o.get_midpoint()
+        return x >= x1 and x < x2 and y >= y1 and y < y2
 
     def render(self):
         if self.render_mode == "rgb_array":
