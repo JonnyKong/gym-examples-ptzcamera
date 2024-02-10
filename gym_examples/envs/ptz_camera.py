@@ -293,10 +293,10 @@ class PtzCameraEnv(gym.Env):
             start_pos, end_pos = l
             pygame.draw.line(
                 canvas,
-                (255, 0, 0),
+                (0, 0, 255),
                 start_pos,
                 end_pos,
-                width=2,
+                width=4,
             )
         return canvas
 
