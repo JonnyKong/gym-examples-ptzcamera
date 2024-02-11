@@ -99,6 +99,7 @@ class PtzCameraEnv(gym.Env):
 
     def _get_info(self):
         return {
+            'vp': self.viewport_grid_loc,
             'vp_2_objcnt': self.vp_2_objcnt,
         }
 
@@ -155,16 +156,30 @@ class PtzCameraEnv(gym.Env):
 
     def _count_obj_in_all_viewports(self):
         ret = {}
-        for vp in self._get_all_viewports():
-            ret[vp] = self._count_obj_in_viewport(vp)
+        for vp in self.get_all_vps():
+            ret[vp] = self._count_obj_in_vp(vp)
         return ret
 
-    def _get_all_viewports(self):
+    def get_all_vps(self):
         for x in range(self.num_grid_x - self.num_grid_viewport_x + 1):
             for y in range(self.num_grid_y - self.num_grid_viewport_y + 1):
                 yield (x, y)
 
-    def _count_obj_in_viewport(self, viewport_grid_loc):
+    def get_center_vp(self):
+        return (
+            int((self.num_grid_x - self.num_grid_viewport_x) / 2),
+            int((self.num_grid_y - self.num_grid_viewport_y) / 2),
+        )
+
+    def get_surrounding_vps_including_self(self, vp):
+        for d in self._action_to_direction.values():
+            vp_ = (np.array(vp) + d)
+            vp_ = (vp_[0], vp_[1])
+            if (vp_[0] >= 0 and vp_[0] <= (self.num_grid_x - self.num_grid_viewport_x) and
+                    vp_[1] >= 0 and vp_[1] <= (self.num_grid_y - self.num_grid_viewport_y)):
+                yield vp_
+
+    def _count_obj_in_vp(self, viewport_grid_loc):
         x1 = viewport_grid_loc[0] * self.grid_size
         x2 = (viewport_grid_loc[0] + self.num_grid_viewport_x) * self.grid_size
         y1 = viewport_grid_loc[1] * self.grid_size
