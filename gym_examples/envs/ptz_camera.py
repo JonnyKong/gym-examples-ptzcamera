@@ -22,7 +22,7 @@ class PtzCameraEnv(gym.Env):
 
     def __init__(self, render_mode=None, num_grid_x=9, num_grid_y=5,
                  num_grid_viewport_x=5, num_grid_viewport_y=3,
-                 grid_size=50, lane_width=20, obj_margin=2):
+                 grid_size=50, lane_width=25, obj_margin=2):
         # The size of the square grid
         self.num_grid_x = num_grid_x
         self.num_grid_y = num_grid_y
@@ -47,9 +47,8 @@ class PtzCameraEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=255,
-            shape=np.array([self.num_grid_viewport_y * self.grid_size,
-                           self.num_grid_viewport_x * self.grid_size,
-                           3]),
+            shape=np.array([3, self.num_grid_viewport_y * self.grid_size,
+                           self.num_grid_viewport_x * self.grid_size]),
             dtype=np.uint8)
 
         self.objects = []
@@ -82,13 +81,13 @@ class PtzCameraEnv(gym.Env):
     def _get_obs(self):
         canvas = self._init_canvas_with_frame_content()
         frame = np.transpose(
-            np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
+            np.array(pygame.surfarray.pixels3d(canvas)), axes=(2, 1, 0)
         )
 
         # Crop out the viewport
         x = self.viewport_grid_loc[0] * self.grid_size
         y = self.viewport_grid_loc[1] * self.grid_size
-        frame = frame[y: y + self.num_grid_viewport_y * self.grid_size,
+        frame = frame[:, y: y + self.num_grid_viewport_y * self.grid_size,
                       x: x + self.num_grid_viewport_x * self.grid_size]
         return frame
 
@@ -195,7 +194,7 @@ class PtzCameraEnv(gym.Env):
         num_lanes = int(self.size_y / self.lane_width)
 
         for i in range(num_lanes):
-            if np.random.random() > 0.02:
+            if self.np_random.random() > 0.02:
                 continue
 
             loc_y = self.lane_width * i + self.obj_margin
@@ -211,7 +210,7 @@ class PtzCameraEnv(gym.Env):
             self.objects.append(o)
 
     def _get_initial_vel(self):
-        return np.random.normal(loc=10, scale=1)
+        return self.np_random.normal(loc=10, scale=1)
 
     def _render_frame(self):
         window_size = (self.size_x, self.size_y)
