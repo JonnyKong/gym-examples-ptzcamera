@@ -20,9 +20,14 @@ class SquareObj():
 class PtzCameraEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, num_grid_x=9, num_grid_y=5,
-                 num_grid_viewport_x=5, num_grid_viewport_y=3,
-                 grid_size=50, lane_width=25, obj_margin=2):
+    def __init__(self, render_mode=None,
+                 num_grid_x=9,
+                 num_grid_y=5,
+                 num_grid_viewport_x=5,
+                 num_grid_viewport_y=3,
+                 grid_size=50,
+                 lane_width=25,
+                 obj_margin=2):
         # The size of the square grid
         self.num_grid_x = num_grid_x
         self.num_grid_y = num_grid_y
@@ -47,8 +52,9 @@ class PtzCameraEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=255,
-            shape=np.array([3, self.num_grid_viewport_y * self.grid_size,
-                           self.num_grid_viewport_x * self.grid_size]),
+            shape=np.array([self.num_grid_viewport_y * self.grid_size,
+                           self.num_grid_viewport_x * self.grid_size,
+                           3]),
             dtype=np.uint8)
 
         self.objects = []
@@ -81,13 +87,13 @@ class PtzCameraEnv(gym.Env):
     def _get_obs(self):
         canvas = self._init_canvas_with_frame_content()
         frame = np.transpose(
-            np.array(pygame.surfarray.pixels3d(canvas)), axes=(2, 1, 0)
+            np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
         )
 
         # Crop out the viewport
         x = self.viewport_grid_loc[0] * self.grid_size
         y = self.viewport_grid_loc[1] * self.grid_size
-        frame = frame[:, y: y + self.num_grid_viewport_y * self.grid_size,
+        frame = frame[y: y + self.num_grid_viewport_y * self.grid_size,
                       x: x + self.num_grid_viewport_x * self.grid_size]
         return frame
 
