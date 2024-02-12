@@ -87,7 +87,7 @@ class PtzCameraEnv(gym.Env):
     def _get_obs(self):
         canvas = self._init_canvas_with_frame_content()
         frame = np.transpose(
-            np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
+            pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2)
         )
 
         # Crop out the viewport
