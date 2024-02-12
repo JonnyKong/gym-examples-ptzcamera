@@ -257,7 +257,7 @@ class PtzCameraEnv(gym.Env):
             self.clock.tick(self.metadata["render_fps"])
         else:  # rgb_array
             return np.transpose(
-                np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
+                pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2)
             )
 
     def _init_canvas_with_frame_content(self):
