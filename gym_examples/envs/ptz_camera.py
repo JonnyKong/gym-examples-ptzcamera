@@ -85,7 +85,7 @@ class PtzCameraEnv(gym.Env):
         self.clock = None
 
     def _get_obs(self):
-        canvas = self._init_canvas_with_frame_content()
+        canvas = self._init_canvas_with_frame_content(gridlines=False)
         frame = np.transpose(
             pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2)
         )
@@ -101,6 +101,7 @@ class PtzCameraEnv(gym.Env):
         return {
             'vp': self.viewport_grid_loc,
             'vp_2_objcnt': self.vp_2_objcnt,
+            'gt_objcnt': len(self.objects),
         }
 
     def reset(self, seed=None, options=None):
@@ -162,6 +163,9 @@ class PtzCameraEnv(gym.Env):
 
     def get_panoramic_wh(self):
         return (self.size_x, self.size_y)
+
+    def get_grid_size(self):
+        return self.grid_size
 
     def get_num_grids_wh(self):
         """
@@ -258,7 +262,7 @@ class PtzCameraEnv(gym.Env):
         if self.clock is None and self.render_mode == "human":
             self.clock = pygame.time.Clock()
 
-        canvas = self._init_canvas_with_frame_content()
+        canvas = self._init_canvas_with_frame_content(gridlines=True)
         canvas = self._draw_viewport_box_onto_canvas(canvas)
 
         if self.render_mode == "human":
@@ -275,7 +279,7 @@ class PtzCameraEnv(gym.Env):
                 pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2)
             )
 
-    def _init_canvas_with_frame_content(self):
+    def _init_canvas_with_frame_content(self, gridlines: bool):
         window_size = (self.size_x, self.size_y)
 
         canvas = pygame.Surface(window_size)
@@ -289,23 +293,24 @@ class PtzCameraEnv(gym.Env):
                 pygame.Rect(o.loc_x, o.loc_y, o.size, o.size),
             )
 
-        # Gridlines
-        for i in range(self.num_grid_y):
-            pygame.draw.line(
-                canvas,
-                0,
-                (0, self.grid_size * i),
-                (self.size_x, self.grid_size * i),
-                width=1,
-            )
-        for i in range(self.num_grid_x):
-            pygame.draw.line(
-                canvas,
-                0,
-                (self.grid_size * i, 0),
-                (self.grid_size * i, self.size_y),
-                width=1,
-            )
+        if gridlines:
+            # Gridlines
+            for i in range(self.num_grid_y):
+                pygame.draw.line(
+                    canvas,
+                    0,
+                    (0, self.grid_size * i),
+                    (self.size_x, self.grid_size * i),
+                    width=1,
+                )
+            for i in range(self.num_grid_x):
+                pygame.draw.line(
+                    canvas,
+                    0,
+                    (self.grid_size * i, 0),
+                    (self.grid_size * i, self.size_y),
+                    width=1,
+                )
         return canvas
 
     def _draw_viewport_box_onto_canvas(self, canvas):
