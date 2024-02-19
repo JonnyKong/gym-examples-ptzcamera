@@ -160,6 +160,21 @@ class PtzCameraEnv(gym.Env):
             ret[vp] = self._count_obj_in_vp(vp)
         return ret
 
+    def get_panoramic_wh(self):
+        return (self.size_x, self.size_y)
+
+    def get_num_grids_wh(self):
+        """
+        Returns the whole frame size in unit of grids.
+        """
+        return (self.num_grid_x, self.num_grid_y)
+
+    def get_num_grids_viewport_wh(self):
+        """
+        Returns the viewport size in unit of grids.
+        """
+        return (self.num_grid_viewport_x, self.num_grid_viewport_y)
+
     def get_all_vps(self):
         for x in range(self.num_grid_x - self.num_grid_viewport_x + 1):
             for y in range(self.num_grid_y - self.num_grid_viewport_y + 1):
