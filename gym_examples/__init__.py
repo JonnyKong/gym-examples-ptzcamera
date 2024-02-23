@@ -9,3 +9,8 @@ register(
     id="gym_examples/PtzCamera",
     entry_point="gym_examples.envs:PtzCameraEnv",
 )
+
+register(
+    id="gym_examples/PtzCameraReal",
+    entry_point="gym_examples.envs:PtzCameraRealEnv",
+)
