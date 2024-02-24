@@ -3,6 +3,7 @@ import gymnasium as gym
 import numpy as np
 import pygame
 from gymnasium import spaces
+from PIL import Image
 
 
 class PtzCameraRealEnv(gym.Env):
@@ -23,7 +24,7 @@ class PtzCameraRealEnv(gym.Env):
 
         # Calculate grid size in piexls. If grid size not divisible, discard
         # pixels in the lower and right edges
-        self.img_h, self.img_w, _ = cv2.imread(str(self.frames[0])).shape
+        self.img_w, self.img_h, = Image.open(str(self.frames[0])).size
         self.grid_size_x = int(self.img_w / num_grid_x)
         self.grid_size_y = int(self.img_h / num_grid_y)
         self.viewport_size_x = num_grid_viewport_x * self.grid_size_x
@@ -61,13 +62,15 @@ class PtzCameraRealEnv(gym.Env):
 
     def _get_obs(self):
         img_path = self.frames[self.frame_id]
-        img = cv2.imread(str(img_path))
+        
+        # Save a copy so render() does not need to imread again
+        self.img = np.array(Image.open(str(img_path)))
 
         # Crop out the viewport
         x = self.viewport_grid_loc[0] * self.grid_size_x
         y = self.viewport_grid_loc[1] * self.grid_size_y
-        img = img[y: y + self.num_grid_viewport_y * self.grid_size_y,
-                  x: x + self.num_grid_viewport_x * self.grid_size_x]
+        img = self.img[y: y + self.num_grid_viewport_y * self.grid_size_y,
+                       x: x + self.num_grid_viewport_x * self.grid_size_x]
         return img
 
     def _get_info(self):
@@ -129,10 +132,7 @@ class PtzCameraRealEnv(gym.Env):
         if self.clock is None and self.render_mode == "human":
             self.clock = pygame.time.Clock()
 
-        img_path = self.frames[self.frame_id]
-        frame = cv2.imread(str(img_path))
-
-        canvas = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
+        canvas = pygame.surfarray.make_surface(np.transpose(self.img, (1, 0, 2)))
 
         self._draw_gridlines_onto_canvas(canvas)
         self._draw_viewport_box_onto_canvas(canvas)
@@ -147,7 +147,9 @@ class PtzCameraRealEnv(gym.Env):
             # The following line will automatically add a delay to keep the framerate stable.
             self.clock.tick(self.metadata["render_fps"])
         else:  # rgb_array
-            pygame.surfarray.pixels3d(canvas)
+            return np.transpose(
+                pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2)
+            )
 
     def _draw_gridlines_onto_canvas(self, canvas):
         for i in range(self.num_grid_y):
@@ -193,3 +195,21 @@ class PtzCameraRealEnv(gym.Env):
                 width=4,
             )
         return canvas
+
+    def get_panoramic_wh(self):
+        return (self.img_w, self.img_h)
+
+    def get_grid_wh(self):
+        return (self.grid_size_x, self.grid_size_y)
+
+    def get_num_grids_wh(self):
+        """
+        Returns the whole frame size in unit of grids.
+        """
+        return (self.num_grid_x, self.num_grid_y)
+
+    def get_num_grids_viewport_wh(self):
+        """
+        Returns the viewport size in unit of grids.
+        """
+        return (self.num_grid_viewport_x, self.num_grid_viewport_y)

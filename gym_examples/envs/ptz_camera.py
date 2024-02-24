@@ -164,8 +164,8 @@ class PtzCameraEnv(gym.Env):
     def get_panoramic_wh(self):
         return (self.size_x, self.size_y)
 
-    def get_grid_size(self):
-        return self.grid_size
+    def get_grid_wh(self):
+        return (self.grid_size, self.grid_size)
 
     def get_num_grids_wh(self):
         """
