@@ -61,14 +61,20 @@ class PtzCameraRealEnv(gym.Env):
         self.clock = None
 
     def _get_obs(self):
+        return self.get_view_of_viewport(self.viewport_grid_loc)
+
+    def get_view_of_viewport(self, vp):
+        """
+        Can be used by the oracle to cheat by looking outside the viewport.
+        """
         img_path = self.frames[self.frame_id]
-        
+
         # Save a copy so render() does not need to imread again
         self.img = np.array(Image.open(str(img_path)))
 
         # Crop out the viewport
-        x = self.viewport_grid_loc[0] * self.grid_size_x
-        y = self.viewport_grid_loc[1] * self.grid_size_y
+        x = vp[0] * self.grid_size_x
+        y = vp[1] * self.grid_size_y
         img = self.img[y: y + self.num_grid_viewport_y * self.grid_size_y,
                        x: x + self.num_grid_viewport_x * self.grid_size_x]
         return img
