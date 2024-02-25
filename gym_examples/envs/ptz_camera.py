@@ -85,14 +85,20 @@ class PtzCameraEnv(gym.Env):
         self.clock = None
 
     def _get_obs(self):
+        return self.get_view_of_viewport(self.viewport_grid_loc)
+
+    def get_view_of_viewport(self, vp):
+        """
+        Can be used by the oracle to cheat by looking outside the viewport.
+        """
         canvas = self._init_canvas_with_frame_content(gridlines=False)
         frame = np.transpose(
             pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2)
         )
 
         # Crop out the viewport
-        x = self.viewport_grid_loc[0] * self.grid_size
-        y = self.viewport_grid_loc[1] * self.grid_size
+        x = vp[0] * self.grid_size
+        y = vp[1] * self.grid_size
         frame = frame[y: y + self.num_grid_viewport_y * self.grid_size,
                       x: x + self.num_grid_viewport_x * self.grid_size]
         return frame
