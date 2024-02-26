@@ -100,6 +100,7 @@ class PtzCameraRealEnv(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
+        self.frame_id += 1
         return observation, info
 
     def step(self, action):
