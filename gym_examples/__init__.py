@@ -11,6 +11,11 @@ register(
 )
 
 register(
+    id="gym_examples/UnrestrictedPtzCamera",
+    entry_point="gym_examples.envs:UnrestrictedPtzCameraEnv",
+)
+
+register(
     id="gym_examples/PtzCameraReal",
     entry_point="gym_examples.envs:PtzCameraRealEnv",
 )

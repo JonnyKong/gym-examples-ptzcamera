@@ -1,4 +1,5 @@
 from gym_examples.envs.grid_world import GridWorldEnv
 from gym_examples.envs.ptz_camera import PtzCameraEnv
+from gym_examples.envs.unrestricted_ptz_camera import UnrestrictedPtzCameraEnv
 from gym_examples.envs.ptz_camera_real import PtzCameraRealEnv
 from gym_examples.envs.unrestricted_ptz_camera_real import UnrestrictedPtzCameraRealEnv
