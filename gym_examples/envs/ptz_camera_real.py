@@ -1,4 +1,3 @@
-import cv2
 import gymnasium as gym
 import numpy as np
 import pygame
@@ -9,14 +8,16 @@ from PIL import Image
 class PtzCameraRealEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self,
-                 frames_dir,
-                 render_mode=None,
-                 num_grid_x=9,
-                 num_grid_y=5,
-                 num_grid_viewport_x=5,
-                 num_grid_viewport_y=3):
-        self.frames = sorted(frames_dir.glob('*.png'))
+    def __init__(
+        self,
+        frames_dir,
+        render_mode=None,
+        num_grid_x=9,
+        num_grid_y=5,
+        num_grid_viewport_x=5,
+        num_grid_viewport_y=3,
+    ):
+        self.frames = sorted(frames_dir.glob("*.png"))
         self.num_grid_x = num_grid_x
         self.num_grid_y = num_grid_y
         self.num_grid_viewport_x = num_grid_viewport_x
@@ -24,7 +25,10 @@ class PtzCameraRealEnv(gym.Env):
 
         # Calculate grid size in piexls. If grid size not divisible, discard
         # pixels in the lower and right edges
-        self.img_w, self.img_h, = Image.open(str(self.frames[0])).size
+        (
+            self.img_w,
+            self.img_h,
+        ) = Image.open(str(self.frames[0])).size
         self.grid_size_x = int(self.img_w / num_grid_x)
         self.grid_size_y = int(self.img_h / num_grid_y)
         self.viewport_size_x = num_grid_viewport_x * self.grid_size_x
@@ -34,7 +38,8 @@ class PtzCameraRealEnv(gym.Env):
             low=0,
             high=255,
             shape=np.array([self.viewport_size_y, self.viewport_size_x, 3]),
-            dtype=np.uint8)
+            dtype=np.uint8,
+        )
 
         # "no-op", "right", "up", "left", "down"
         self.action_space = spaces.Discrete(5)
@@ -71,13 +76,15 @@ class PtzCameraRealEnv(gym.Env):
         # Crop out the viewport
         x = vp[0] * self.grid_size_x
         y = vp[1] * self.grid_size_y
-        img = self.img[y: y + self.num_grid_viewport_y * self.grid_size_y,
-                       x: x + self.num_grid_viewport_x * self.grid_size_x]
+        img = self.img[
+            y : y + self.num_grid_viewport_y * self.grid_size_y,
+            x : x + self.num_grid_viewport_x * self.grid_size_x,
+        ]
         return img
 
     def _get_info(self):
         return {
-            'vp': self.viewport_grid_loc,
+            "vp": self.viewport_grid_loc,
         }
 
     def reset(self, seed=None, options=None):
@@ -123,8 +130,12 @@ class PtzCameraRealEnv(gym.Env):
         direction = self._action_to_direction[action]
         self.viewport_grid_loc = np.array(self.viewport_grid_loc) + direction
         self.viewport_grid_loc = (
-            np.clip(self.viewport_grid_loc[0], 0, self.num_grid_x - self.num_grid_viewport_x),
-            np.clip(self.viewport_grid_loc[1], 0, self.num_grid_y - self.num_grid_viewport_y),
+            np.clip(
+                self.viewport_grid_loc[0], 0, self.num_grid_x - self.num_grid_viewport_x
+            ),
+            np.clip(
+                self.viewport_grid_loc[1], 0, self.num_grid_y - self.num_grid_viewport_y
+            ),
         )
 
     def render(self):
@@ -156,9 +167,7 @@ class PtzCameraRealEnv(gym.Env):
             # The following line will automatically add a delay to keep the framerate stable.
             self.clock.tick(self.metadata["render_fps"])
         else:  # rgb_array
-            return np.transpose(
-                pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2)
-            )
+            return np.transpose(pygame.surfarray.pixels3d(canvas), axes=(1, 0, 2))
 
     def _draw_gridlines_onto_canvas(self, canvas):
         for i in range(self.num_grid_y):

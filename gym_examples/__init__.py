@@ -14,3 +14,8 @@ register(
     id="gym_examples/PtzCameraReal",
     entry_point="gym_examples.envs:PtzCameraRealEnv",
 )
+
+register(
+    id="gym_examples/UnrestrictedPtzCameraReal",
+    entry_point="gym_examples.envs:UnrestrictedPtzCameraRealEnv",
+)
