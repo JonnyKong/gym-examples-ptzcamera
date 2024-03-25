@@ -82,6 +82,9 @@ class PtzCameraRealEnv(gym.Env):
         ]
         return img
 
+    def get_panoramic_view(self):
+        return self.img
+
     def _get_info(self):
         return {
             "vp": self.viewport_grid_loc,
