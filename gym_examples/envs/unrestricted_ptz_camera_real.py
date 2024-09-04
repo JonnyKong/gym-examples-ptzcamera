@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from gymnasium import spaces
 from PIL import Image
@@ -14,6 +16,7 @@ class UnrestrictedPtzCameraRealEnv(PtzCameraRealEnv):
     def __init__(
         self,
         frames_dir,
+        perc_testing_data=None,
         render_mode=None,
         num_grid_x=9,
         num_grid_y=5,
@@ -21,6 +24,14 @@ class UnrestrictedPtzCameraRealEnv(PtzCameraRealEnv):
         num_grid_viewport_y=3,
     ):
         self.frames = sorted(frames_dir.glob("*.png"))
+        if perc_testing_data:
+            # Take the last `perc_testing_data` percent frames only
+            self.start_frame_id = int((1.0 - perc_testing_data) * len(self.frames))
+        else:
+            self.start_frame_id = 0
+        logging.info(f'Replaying frames {self.start_frame_id} - {len(self.frames) - 1}')
+        self.frames = self.frames[self.start_frame_id:]
+
         self.num_grid_x = num_grid_x
         self.num_grid_y = num_grid_y
         self.num_grid_viewport_x = num_grid_viewport_x
@@ -36,6 +47,7 @@ class UnrestrictedPtzCameraRealEnv(PtzCameraRealEnv):
         self.grid_size_y = int(self.img_h / num_grid_y)
         self.viewport_size_x = num_grid_viewport_x * self.grid_size_x
         self.viewport_size_y = num_grid_viewport_y * self.grid_size_y
+        logging.info(f'Grid size: x={self.grid_size_x}, y={self.grid_size_y}')
 
         self.observation_space = spaces.Box(
             low=0,
@@ -61,6 +73,9 @@ class UnrestrictedPtzCameraRealEnv(PtzCameraRealEnv):
         self.clock = None
 
         self.frame_id = 0
+
+    def get_start_frame_id(self):
+        return self.start_frame_id
 
     def _move_viewport(self, action):
         self.viewport_grid_loc = action
