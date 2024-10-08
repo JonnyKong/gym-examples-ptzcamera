@@ -31,7 +31,6 @@ class UnrestrictedPtzCameraRealEnv(PtzCameraRealEnv):
         self.start_frame_id = start_frame_id
         self.end_frame_id = end_frame_id
         logging.info(f'Replaying frames {self.start_frame_id} - {self.end_frame_id}')
-        self.frames = self.frames[self.start_frame_id:]
 
         self.num_grid_x = num_grid_x
         self.num_grid_y = num_grid_y
