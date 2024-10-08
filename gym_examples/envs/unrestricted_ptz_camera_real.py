@@ -11,12 +11,16 @@ class UnrestrictedPtzCameraRealEnv(PtzCameraRealEnv):
     """
     A PTZ camera env that is not restricted to move one step at a time. Each
     action is the (x, y) coordinate of the top-left corner, in unit of grid.
+
+    `start_frame_id`: inclusive.
+    `end_frame_id`: inclusive.
     """
 
     def __init__(
         self,
         frames_dir,
-        perc_testing_data=None,
+        start_frame_id=0,
+        end_frame_id=None,
         render_mode=None,
         num_grid_x=9,
         num_grid_y=5,
@@ -24,12 +28,9 @@ class UnrestrictedPtzCameraRealEnv(PtzCameraRealEnv):
         num_grid_viewport_y=3,
     ):
         self.frames = sorted(frames_dir.glob("*.png"))
-        if perc_testing_data:
-            # Take the last `perc_testing_data` percent frames only
-            self.start_frame_id = int((1.0 - perc_testing_data) * len(self.frames))
-        else:
-            self.start_frame_id = 0
-        logging.info(f'Replaying frames {self.start_frame_id} - {len(self.frames) - 1}')
+        self.start_frame_id = start_frame_id
+        self.end_frame_id = end_frame_id
+        logging.info(f'Replaying frames {self.start_frame_id} - {self.end_frame_id}')
         self.frames = self.frames[self.start_frame_id:]
 
         self.num_grid_x = num_grid_x
@@ -72,7 +73,22 @@ class UnrestrictedPtzCameraRealEnv(PtzCameraRealEnv):
         self.window = None
         self.clock = None
 
-        self.frame_id = 0
+        self.frame_id = start_frame_id
+
+    def step(self, action):
+        self._load_img()
+        self._move_viewport(action)
+
+        observation = self._get_obs()
+        reward = 0  # TODO
+        terminated = (self.frame_id == self.end_frame_id)
+        info = self._get_info()
+
+        if self.render_mode == "human":
+            self._render_frame()
+
+        self.frame_id += 1
+        return observation, reward, terminated, False, info
 
     def get_start_frame_id(self):
         return self.start_frame_id
